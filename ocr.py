@@ -6,31 +6,18 @@ import time
 from pdf2image import convert_from_path
 from pdf2image import convert_from_bytes
 import filetype
+from docx import Document
 import mimetypes
+
 
 
 # Page configuration
 st.set_page_config(
-    page_title="Extract Text from Images with AI Solutions",
-    page_icon="🖼️",
+    page_title="AI-Powered Text Extraction Tool",
+    page_icon="📄",
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
-
-# File validation function
-def validate_file(uploaded_file):
-    mime_type, _ = mimetypes.guess_type(uploaded_file.name)
-    supported_mime_types = {
-        "image/jpeg": "jpeg",
-        "image/png": "png",
-        "image/gif": "gif",
-        "image/tiff": "tiff",
-        "application/pdf": "pdf",
-    }
-    if mime_type in supported_mime_types:
-        return supported_mime_types[mime_type]
-    return None
 
 # Enhanced Debugging Function
 def log_timing(step_name, start_time):
@@ -45,10 +32,17 @@ def clear_results():
 SUPPORTED_FORMATS = ["jpg", "jpeg", "png", "gif", "jfif", "heic", "pdf", "tiff"]
 
 # File validation function
-def validate_file(file):
-    kind = filetype.guess(file)
-    if kind is not None and kind.extension in SUPPORTED_FORMATS:
-        return kind.extension
+def validate_file(uploaded_file):
+    mime_type, _ = mimetypes.guess_type(uploaded_file.name)
+    supported_mime_types = {
+        "image/jpeg": "jpeg",
+        "image/png": "png",
+        "image/gif": "gif",
+        "image/tiff": "tiff",
+        "application/pdf": "pdf",
+    }
+    if mime_type in supported_mime_types:
+        return supported_mime_types[mime_type]
     return None
 
 # Process uploaded file
@@ -66,36 +60,37 @@ def process_uploaded_file(uploaded_file, file_extension):
     else:
         raise ValueError("Unsupported file format")
 
-
 # Custom CSS Styling
 st.markdown(
     """
     <style>
     body {
-        background-color: #f8f9fa;
-        font-family: 'Arial', sans-serif;
-        color: #212529;
+        background-color: #f3f4f6;
+        font-family: 'Roboto', sans-serif;
+        color: #333;
     }
     h1 {
         color: #007bff;
         text-align: center;
-        font-size: 3em;
+        font-size: 2.8em;
         margin-bottom: 0.5em;
+        font-weight: bold;
     }
     .description {
         text-align: center;
         font-size: 1.2em;
-        color: #6c757d;
-        margin-bottom: 2em;
+        color: #555;
+        margin-bottom: 1.5em;
     }
     .stButton button {
         background-color: #007bff;
         color: white;
         border: none;
-        padding: 0.7em 1.5em;
+        padding: 0.8em 1.5em;
         font-size: 1.1em;
         border-radius: 5px;
         cursor: pointer;
+        transition: background-color 0.3s;
     }
     .stButton button:hover {
         background-color: #0056b3;
@@ -119,6 +114,16 @@ st.markdown(
         font-size: 1.3em;
         margin-bottom: 0.5em;
     }
+    .ocr-result {
+        font-family: 'Roboto', sans-serif;
+        font-size: 1.1em;
+        line-height: 1.6;
+        color: #222;
+        background: #ffffff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -128,8 +133,8 @@ st.markdown(
 start_time = time.time()
 st.markdown(
     """
-    <h1>Extract Text from Images Using AI Solutions</h1>
-    <p class="description">Experience the power of AI to extract text seamlessly and efficiently.</p>
+    <h1>AI-Powered Text Extraction Tool</h1>
+    <p class="description">Extract text from images and PDFs with ease, powered by cutting-edge AI.</p>
     """,
     unsafe_allow_html=True,
 )
@@ -181,16 +186,31 @@ with st.sidebar:
         except Exception as e:
             st.error(f"Error processing file: {e}")
 
-
-# Display OCR result and download option
+# Display OCR result and download options
 if "ocr_result" in st.session_state and st.session_state["ocr_result"]:
-    st.markdown(st.session_state["ocr_result"])
+    st.markdown(f"<div class='ocr-result'>{st.session_state['ocr_result']}</div>", unsafe_allow_html=True)
+
+    # Download as .txt
     result_bytes = io.BytesIO(st.session_state["ocr_result"].encode("utf-8"))
     st.download_button(
         label="Download Results as .txt",
         data=result_bytes,
         file_name="ocr_result.txt",
         mime="text/plain",
+    )
+
+    # Download as .docx
+    doc = Document()
+    doc.add_heading("Extracted Text", level=1)
+    doc.add_paragraph(st.session_state["ocr_result"])
+    docx_bytes = io.BytesIO()
+    doc.save(docx_bytes)
+    docx_bytes.seek(0)
+    st.download_button(
+        label="Download Results as .docx",
+        data=docx_bytes,
+        file_name="ocr_result.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     )
 else:
     st.info("Upload a file and click 'Extract Text' to see results.")

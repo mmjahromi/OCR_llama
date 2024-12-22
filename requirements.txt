@@ -1,0 +1,7 @@
+
+streamlit
+ollama
+Pillow
+pdf2image
+mimetypes
+docxtpl
