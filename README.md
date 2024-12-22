@@ -1,5 +1,4 @@
-# Save the current markdown content to a .md file
-markdown_content = """
+
 # OCR Text Extraction Using AI (Llama2)
 
 This project is an AI-powered OCR (Optical Character Recognition) tool that uses the Llama2 model to extract text from images and PDF files. It supports a wide range of file formats and provides outputs in both plain text and `.docx` formats. The application is built using **Streamlit** for a user-friendly interface.
