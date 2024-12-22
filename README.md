@@ -7,8 +7,7 @@ This project is an AI-powered OCR (Optical Character Recognition) tool that uses
 - **File Format Support**: JPG, PNG, GIF, JFIF, HEIC, PDF, TIFF.
 - **Multilingual Capability**: Extracts text in multiple languages (dependent on Llama2's language model).
 - **Download Options**: Extracted text can be downloaded as `.txt` or `.docx`.
-- **User-Friendly Interface**: Modern design inspired by websites like [aalemi.com](https://aalemi.com) and [imagetotext.info](https://www.imagetotext.info).
-- **Advertisement Section**: Space for promoting sponsored ads.
+
 
 ## Requirements
 
