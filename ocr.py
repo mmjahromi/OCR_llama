@@ -3,12 +3,15 @@ import ollama
 from PIL import Image
 import io
 import time
-from pdf2image import convert_from_path
 from pdf2image import convert_from_bytes
-import filetype
-from docx import Document
 import mimetypes
+from docx import Document
+import unicodedata
 
+
+# Remove surrogate characters from text
+def remove_surrogates(text):
+    return ''.join(char for char in text if not unicodedata.category(char).startswith("Cs"))
 
 
 # Page configuration
@@ -19,17 +22,21 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
 # Enhanced Debugging Function
 def log_timing(step_name, start_time):
     elapsed_time = time.time() - start_time
     st.write(f"⏱️ {step_name} took {elapsed_time:.2f} seconds")
 
+
 # Clear data on file upload
 def clear_results():
     st.session_state["ocr_result"] = None
 
+
 # Supported file formats
 SUPPORTED_FORMATS = ["jpg", "jpeg", "png", "gif", "jfif", "heic", "pdf", "tiff"]
+
 
 # File validation function
 def validate_file(uploaded_file):
@@ -44,6 +51,7 @@ def validate_file(uploaded_file):
     if mime_type in supported_mime_types:
         return supported_mime_types[mime_type]
     return None
+
 
 # Process uploaded file
 def process_uploaded_file(uploaded_file, file_extension):
@@ -60,74 +68,45 @@ def process_uploaded_file(uploaded_file, file_extension):
     else:
         raise ValueError("Unsupported file format")
 
+
 # Custom CSS Styling
 st.markdown(
     """
     <style>
     body {
-        background-color: #f3f4f6;
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
         font-family: 'Roboto', sans-serif;
-        color: #333;
+        color: #fff;
     }
     h1 {
-        color: #007bff;
+        color: #ffffff;
         text-align: center;
-        font-size: 2.8em;
-        margin-bottom: 0.5em;
+        font-size: 3em;
+        margin-bottom: 0.3em;
         font-weight: bold;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     }
     .description {
         text-align: center;
-        font-size: 1.2em;
-        color: #555;
-        margin-bottom: 1.5em;
-    }
-    .stButton button {
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 0.8em 1.5em;
-        font-size: 1.1em;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-    .stButton button:hover {
-        background-color: #0056b3;
-    }
-    .sidebar-header {
-        font-size: 1.5em;
-        color: #007bff;
-        margin-bottom: 1em;
-    }
-    .ad-container {
-        border: 1px solid #ccc;
-        padding: 20px;
-        text-align: center;
-        background-color: #ffffff;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        margin-top: 2em;
-    }
-    .ad-container h3 {
-        color: #333;
         font-size: 1.3em;
-        margin-bottom: 0.5em;
+        color: #e0e0e0;
+        margin-bottom: 1.5em;
     }
     .ocr-result {
         font-family: 'Roboto', sans-serif;
         font-size: 1.1em;
         line-height: 1.6;
-        color: #222;
+        color: #000;
         background: #ffffff;
         padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
 
 # App title and description
 start_time = time.time()
@@ -139,6 +118,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 log_timing("Page Setup", start_time)
+
 
 # Sidebar for uploading files
 with st.sidebar:
@@ -180,18 +160,24 @@ with st.sidebar:
                                 }
                             ],
                         )
-                        st.session_state["ocr_result"] = response.message.content
+
+                        # Sanitize the response to remove invalid characters
+                        sanitized_response = remove_surrogates(response.message.content)
+                        st.session_state["ocr_result"] = sanitized_response
+
                     except Exception as e:
                         st.error(f"Error extracting text: {e}")
         except Exception as e:
             st.error(f"Error processing file: {e}")
 
+
 # Display OCR result and download options
 if "ocr_result" in st.session_state and st.session_state["ocr_result"]:
-    st.markdown(f"<div class='ocr-result'>{st.session_state['ocr_result']}</div>", unsafe_allow_html=True)
+    sanitized_result = remove_surrogates(st.session_state["ocr_result"])
+    st.markdown(f"<div class='ocr-result'>{sanitized_result}</div>", unsafe_allow_html=True)
 
     # Download as .txt
-    result_bytes = io.BytesIO(st.session_state["ocr_result"].encode("utf-8"))
+    result_bytes = io.BytesIO(sanitized_result.encode("utf-8", errors="replace"))
     st.download_button(
         label="Download Results as .txt",
         data=result_bytes,
@@ -202,7 +188,7 @@ if "ocr_result" in st.session_state and st.session_state["ocr_result"]:
     # Download as .docx
     doc = Document()
     doc.add_heading("Extracted Text", level=1)
-    doc.add_paragraph(st.session_state["ocr_result"])
+    doc.add_paragraph(sanitized_result)
     docx_bytes = io.BytesIO()
     doc.save(docx_bytes)
     docx_bytes.seek(0)
@@ -214,15 +200,3 @@ if "ocr_result" in st.session_state and st.session_state["ocr_result"]:
     )
 else:
     st.info("Upload a file and click 'Extract Text' to see results.")
-
-# Advertisement Section
-st.markdown("---")
-st.markdown(
-    """
-    <div class="ad-container">
-        <h3>Sponsored Ads</h3>
-        <p>Promote your brand here! Contact us for more details.</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
